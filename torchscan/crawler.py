@@ -169,7 +169,13 @@ def crawl_module(
                     current_rf, current_stride, current_padding = module_rf(module, input[0], output)
 
                 # Update layer information
-                info[fw_idx]['output_shape'] = (-1, *output.shape[1:])
+                if type(output) == tuple:
+                    info[fw_idx]['output_shape'] = ((-1, *element.shape[1:]) for element in output)
+                elif type(output) == torch.Tensor:
+                    info[fw_idx]['output_shape'] = (-1, *output.shape[1:])
+                else:
+                    raise NotImplementedError
+
                 # Add them, since some modules can be used several times
                 info[fw_idx]['flops'] = tot_flops
                 info[fw_idx]['macs'] = tot_macs
@@ -254,7 +260,7 @@ def summary(
     max_depth: Optional[int] = None,
     receptive_field: bool = False,
     effective_rf_stats: bool = False,
-) -> None:
+) -> str:
     """Print module summary for an expected input tensor shape
 
     Example::
@@ -278,4 +284,4 @@ def summary(
     if isinstance(max_depth, int):
         module_info = aggregate_info(module_info, max_depth)
     # Format it and print it
-    print(format_info(module_info, wrap_mode, receptive_field, effective_rf_stats))
+    return format_info(module_info, wrap_mode, receptive_field, effective_rf_stats)
